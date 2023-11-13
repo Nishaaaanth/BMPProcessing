@@ -1,6 +1,13 @@
 # BMPProcessing
 Processing BMP files to manipulate the image features.
 <br/>
+<br/>
+
+## Prerequisites
+* <b>clang</b> for building
+* <b>gcc</b> can be used but make sure you change clang to gcc in make file
+<br/>
+<br/>
 
 ## To use this project on your system
 Clone the repo using
