@@ -10,5 +10,5 @@ fi
 
 name=process
 
-clang $name.c -o ./build/$name
+clang -I Include $name.c -o ./build/$name
 ./build/$name

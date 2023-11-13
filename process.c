@@ -1,41 +1,9 @@
 #include <stdio.h>
 #include <stdlib.h>
-#define OFFSET 14
-
-struct BITMAP_header {
-    char name[2];
-    unsigned int size;
-    int reserved;
-    unsigned int offset;
-};
-
-//BITMAPINFOHEADER: Since this is for Windows NT
-struct DIB_header {
-    unsigned int size;
-    unsigned int width;
-    unsigned int height;
-    unsigned short int color_plane;
-    unsigned short int color_depth;
-    unsigned int compression;
-    unsigned int image_size;
-    int horizontal_resolution;
-    int vertical_resolution;
-    unsigned int color_palette;
-    unsigned int important_colors;
-};
-
-struct RGB {
-    unsigned char blue;
-    unsigned char green;
-    unsigned char red;
-    unsigned char alpha;
-};
-
-struct Image {
-    int height;
-    int width;
-    struct RGB **rgb;
-};
+#include "Include/bitmap.h"
+#include "Include/dib.h"
+#include "Include/image.h"
+#include "Include/rgb.h"
 
 struct Image readImage(FILE *bmp_file, int height, int width) {
     struct Image img;
@@ -52,11 +20,6 @@ struct Image readImage(FILE *bmp_file, int height, int width) {
     printf("Image has been read successfully...\n");
     return img;
 }
-
-//adding & to while passing bmp_file value to readImage
-//interchanging width, sizeof(struct RGB) in fread in readImage function
-//added * for img in renderImage while passing the value to RBGToGreyscale
-//size of  bmp_header is made struct bmp_header instead of 3 * int in renderImage fwrite
 
 unsigned char greyscale(struct RGB rgb) {
     //ALL THE COEFFICIENTS ARE FROM NTSC (1953)
