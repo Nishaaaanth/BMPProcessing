@@ -18,16 +18,17 @@ struct DIB_header {
     unsigned short int color_depth;
     unsigned int compression;
     unsigned int image_size;
-    // int horizontal_resolution;
-    // int vertical_resolution;
-    // unsigned int color_palette;
-    // unsigned int important_colors;
+    int horizontal_resolution;
+    int vertical_resolution;
+    unsigned int color_palette;
+    unsigned int important_colors;
 };
 
 struct RGB {
     unsigned char blue;
     unsigned char green;
     unsigned char red;
+    unsigned char alpha;
 };
 
 struct Image {
@@ -41,7 +42,7 @@ struct Image readImage(FILE *bmp_file, int height, int width) {
 
     img.height = height;
     img.width = width;
-    img.rgb = (struct RGB **) malloc(height * sizeof(void *));
+    img.rgb = (struct RGB **) malloc(height * sizeof(struct RGB *));
 
     for(int i=height-1; i>=0; i--) {
         img.rgb[i] = (struct RGB *) malloc(width * sizeof(struct RGB));
@@ -62,7 +63,8 @@ unsigned char greyscale(struct RGB rgb) {
     const float rCoeff = 0.299f;
     const float gCoeff = 0.587f;
     const float bCoeff = 0.114f;
-    return ((rgb.red * rCoeff) + (rgb.green * gCoeff) + (rgb.blue * bCoeff));
+    const float aCoeff = 0.2126f;
+    return ((rgb.red * rCoeff) + (rgb.green * gCoeff) + (rgb.blue * bCoeff) + (rgb.alpha * aCoeff));
 }
 
 void RGBToGreyscale(struct Image img) {
@@ -79,7 +81,7 @@ void RGBToGreyscale(struct Image img) {
 }
 
 int renderImage(struct BITMAP_header bmp_header, struct DIB_header dib_header, struct Image img) {
-    FILE *output_file = fopen("./output/output.bmp", "w");
+    FILE *output_file = fopen("./output/output.bmp", "wb");
     if(output_file == NULL) {
         printf("Error outputting the file\n");
         return 1;
@@ -87,20 +89,18 @@ int renderImage(struct BITMAP_header bmp_header, struct DIB_header dib_header, s
 
     RGBToGreyscale(img);
 
-    fwrite(bmp_header.name, 2, 1, output_file);
-    fwrite(&bmp_header.size, 3 * sizeof(int), 1, output_file);
+    fwrite(bmp_header.name, sizeof(bmp_header.name), 1, output_file);
+    fwrite(&bmp_header.size, sizeof(bmp_header.size), 1, output_file);
+    fwrite(&bmp_header.reserved, sizeof(bmp_header.reserved), 1, output_file);
+    fwrite(&bmp_header.offset, sizeof(bmp_header.offset), 1, output_file);
     fwrite(&dib_header, sizeof(struct DIB_header), 1, output_file);
-
-    // fwrite(bmp_header.name, sizeof(bmp_header.name), 1, output_file);
-    // fwrite(&bmp_header.size, sizeof(bmp_header.size), 1, output_file);
-    // fwrite(&dib_header, sizeof(struct DIB_header), 1, output_file);
 
     for(int i=img.height-1; i>=0; i--) {
         fwrite(img.rgb[i], img.width, sizeof(struct RGB), output_file);
     }
     
     fclose(output_file);
-    printf("Output has been renedered\n");
+    printf("Output has been renedered.\n");
     return 0;
 }
 
@@ -123,26 +123,20 @@ int openBMP() {
     struct BITMAP_header bmp_header;
     struct DIB_header dib_header;
 
-    // fread(bmp_header.name, sizeof(bmp_header.name), 1, bmp_file);
-    // fread(&bmp_header.size, sizeof(bmp_header.size), 1, bmp_file);
-    // fread(&bmp_header.reserved, sizeof(bmp_header.reserved), 1, bmp_file);
-    // fread(&bmp_header.offset, sizeof(bmp_header.offset), 1, bmp_file);
+    fread(bmp_header.name, sizeof(bmp_header.name), 1, bmp_file);
+    fread(&bmp_header.size, sizeof(bmp_header.size), 1, bmp_file);
+    fread(&bmp_header.reserved, sizeof(bmp_header.reserved), 1, bmp_file);
+    fread(&bmp_header.offset, sizeof(bmp_header.offset), 1, bmp_file);
     
-    fread(bmp_header.name, 2, 1, bmp_file);
-    fread(&bmp_header.size, 3 * sizeof(int), 1, bmp_file);
-
     if((bmp_header.name[0] != 'B') || (bmp_header.name[1] != 'M')) {
         fclose(bmp_file);
         return 1;
     }
 
     fread(&dib_header, sizeof(struct DIB_header), 1, bmp_file);
-    // printf("%s\n%d\n%d\n%d\n", bmp_header.name, bmp_header.size, bmp_header.reserved, bmp_header.offset);
-    // printf("%d\n%d\n%d\n%d\n%d\n%d\n%d\n%d\n%d\n%d\n%d\n", dib_header.size, dib_header.width, dib_header.height, dib_header.color_plane, dib_header.color_depth, dib_header.compression, dib_header.horizontal_resolution, dib_header.vertical_resolution, dib_header.image_size, dib_header.color_palette, dib_header.important_colors);
-
     if(dib_header.size != 40 && dib_header.compression != 0 && dib_header.color_depth != 24) {
         fclose(bmp_file);
-        printf("File doesn't meet the DIB specification");
+        printf("File doesn't meet the DIB specification.");
         return 1;
     }
     
@@ -152,7 +146,7 @@ int openBMP() {
 
     fclose(bmp_file);
     freeImage(img, dib_header.height);
-    printf("Image has been modified as output.bmp in \"output\" directory\n");
+    printf("Image has been modified as output.bmp in \"output\" directory!\n");
 
     return 0;
 }
